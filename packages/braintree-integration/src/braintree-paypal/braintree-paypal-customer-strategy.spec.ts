@@ -280,6 +280,8 @@ describe('BraintreePaypalCustomerStrategy', () => {
                 commit: false,
                 fundingSource: paypalSdkMock.FUNDING.PAYPAL,
                 style: {
+                    color: 'blue',
+                    label: 'checkout',
                     height: 40,
                 },
                 createOrder: expect.any(Function),
@@ -304,6 +306,8 @@ describe('BraintreePaypalCustomerStrategy', () => {
                 commit: false,
                 fundingSource: paypalSdkMock.FUNDING.PAYPAL,
                 style: {
+                    color: 'blue',
+                    label: 'checkout',
                     height: 40,
                 },
                 createOrder: expect.any(Function),
@@ -325,7 +329,9 @@ describe('BraintreePaypalCustomerStrategy', () => {
                 commit: false,
                 fundingSource: paypalSdkMock.FUNDING.PAYPAL,
                 style: {
-                    height: 100,
+                    color: 'blue',
+                    label: 'checkout',
+                    height: 40,
                 },
                 createOrder: expect.any(Function),
                 onApprove: expect.any(Function),
