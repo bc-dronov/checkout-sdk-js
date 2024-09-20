@@ -139,7 +139,7 @@ export default class CustomerStrategyActionCreator {
                 const state = store.getState();
                 const methodId = options && options.methodId;
                 const meta = { methodId };
-
+                // console.log('methodId sdk', methodId);
                 if (methodId && state.customerStrategies.isInitialized(methodId)) {
                     return observer.complete();
                 }

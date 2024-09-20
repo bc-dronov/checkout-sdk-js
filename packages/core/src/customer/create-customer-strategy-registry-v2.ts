@@ -15,6 +15,7 @@ export interface CustomerStrategyFactories {
 
 export default function createCustomerStrategyRegistry(
     paymentIntegrationService: PaymentIntegrationService,
+    // @ts-ignore
     customerStrategyFactories: CustomerStrategyFactories = defaultCustomerStrategyFactories,
 ): ResolveIdRegistry<CustomerStrategy, CustomerStrategyResolveId> {
     const registry = new ResolveIdRegistry<CustomerStrategy, CustomerStrategyResolveId>();

@@ -46,6 +46,8 @@ export interface PaymentIntent {
      * The payment error encountered in the previous PaymentIntent confirmation. It will be cleared if the PaymentIntent is later updated for any reason.
      */
     last_payment_error: LastPaymentError | null;
+
+    client_secret: string;
 }
 
 /**

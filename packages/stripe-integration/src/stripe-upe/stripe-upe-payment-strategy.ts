@@ -137,7 +137,7 @@ export default class StripeUPEPaymentStrategy implements PaymentStrategy {
 
     async execute(orderRequest: OrderRequestBody, options?: PaymentRequestOptions): Promise<void> {
         const { payment, ...order } = orderRequest;
-
+        console.log('order', order);
         if (!payment || !payment.paymentData) {
             throw new PaymentArgumentInvalidError(['payment.paymentData']);
         }
@@ -342,7 +342,7 @@ export default class StripeUPEPaymentStrategy implements PaymentStrategy {
         });
         const paymentMethod = state.getPaymentMethodOrThrow(methodId);
         const { checkoutSettings } = state.getStoreConfigOrThrow();
-
+        console.log('paymentMethod payment step', paymentMethod);
         if (!isStripeUPEPaymentMethodLike(paymentMethod)) {
             throw new MissingDataError(MissingDataErrorType.MissingPaymentMethod);
         }

@@ -60,7 +60,8 @@ export default class StripeUPECustomerStrategy implements CustomerStrategy {
         const state = this.paymentIntegrationService.getState();
         const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
         const { clientToken } = paymentMethod;
-
+        console.log('p m', paymentMethod);
+        console.log('isStripeUPEPaymentMethodLike(paymentMethod)', isStripeUPEPaymentMethodLike(paymentMethod));
         if (!isStripeUPEPaymentMethodLike(paymentMethod) || !clientToken) {
             throw new MissingDataError(MissingDataErrorType.MissingPaymentToken);
         }

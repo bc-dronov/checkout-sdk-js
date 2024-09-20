@@ -1,17 +1,18 @@
 import { getScriptLoader } from '@bigcommerce/script-loader';
 
 import {
-    CustomerStrategyFactory,
+    CheckoutButtonStrategyFactory,
     toResolvableModule,
 } from '@bigcommerce/checkout-sdk/payment-integration-api';
 
-import StripeUPECustomerStrategy from './stripe-upe-customer-strategy';
+// import StripeUPECustomerStrategy from './stripe-upe-customer-strategy';
 import StripeUPEScriptLoader from './stripe-upe-script-loader';
+import StripeLinkButtonStrategy from './stripe-link-button-strategy';
 
-const createStripeUPECustomerStrategy: CustomerStrategyFactory<StripeUPECustomerStrategy> = (
+const createStripeUPECustomerStrategy: CheckoutButtonStrategyFactory<StripeLinkButtonStrategy> = (
     paymentIntegrationService,
 ) => {
-    return new StripeUPECustomerStrategy(
+    return new StripeLinkButtonStrategy(
         paymentIntegrationService,
         new StripeUPEScriptLoader(getScriptLoader()),
     );

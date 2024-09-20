@@ -46,7 +46,7 @@ export interface StripeElement {
      * in addition to some Element-specific keys.
      * https://stripe.com/docs/js/element/events/on_change?type=paymentElement
      */
-    on(event: 'change' | 'ready', handler: (event: StripeEventType) => void): void;
+    on(event: 'change' | 'ready' | 'confirm' | 'shippingaddresschange' | 'shippingratechange' | 'click', handler: (event: StripeEventType) => void): void;
 
     /**
      * Updates the options the Payment Element was initialized with. Updates are merged into the existing configuration.
@@ -59,6 +59,29 @@ export interface StripeEvent {
     complete: boolean;
     elementType: string;
     empty: boolean;
+    resolve(payload: any): void;
+    billingDetails: {
+        name: string;
+        email: string;
+        phone: string;
+        address: {
+            city: string | null;
+            country: string | null;
+            line1: string | null;
+            postal_code: string | null;
+        }
+    }
+    shippingAddress: {
+        name: string;
+        address: {
+            city: string | null;
+            country: string | null;
+            line1: string | null;
+            line2: string | null;
+            postal_code: string | null;
+            state: string | null;
+        }
+    };
 }
 
 export interface StripeCustomerEvent extends StripeEvent {
@@ -175,6 +198,8 @@ export interface StripeConfirmPaymentData {
      */
     elements: StripeElements;
 
+    clientSecret?: string;
+
     /**
      * Parameters that will be passed on to the Stripe API to confirm the PaymentIntent.
      */
@@ -189,6 +214,7 @@ export interface StripeConfirmPaymentData {
 
 export interface FieldsOptions {
     billingDetails?: AutoOrNever | BillingDetailsProperties;
+    shippingDetails?: AutoOrNever | BillingDetailsProperties;
     phone?: string;
 }
 
@@ -205,7 +231,19 @@ export interface TermOptions {
  * All available options are here https://stripe.com/docs/js/elements_object/create_payment_element
  */
 export interface StripeElementsCreateOptions {
+    paymentMethods?: {
+        link?: 'auto' | 'never';
+        applePay?: 'auto' | 'never';
+        googlePay?: 'auto' | 'never';
+        paypal?: 'auto' | 'never';
+    }
+    shippingAddressRequired?: boolean;
+    billingAddressRequired?: boolean;
+    emailRequired?: boolean;
+    shippingDetails?: string;
+    billingDetails?: string;
     mode?: string;
+    buttonType?: Record<string, string>;
     fields?: FieldsOptions;
     wallets?: WalletOptions;
     allowedCountries?: string[];
@@ -336,13 +374,19 @@ export interface StripeElementsOptions {
      * Make sure that you have TLS enabled on any page that includes the client secret.
      * Refer to our docs to accept a payment and learn about how client_secret should be handled.
      */
-    clientSecret: string;
+    clientSecret?: string;
 
     /**
      * Match the design of your site with the appearance option.
      * The layout of each Element stays consistent, but you can modify colors, fonts, borders, padding, and more.
      */
     appearance?: StripeUPEAppearanceOptions;
+
+    mode?: string;
+
+    amount?: number;
+
+    currency?: string;
 }
 
 export interface StripeUpdateElementsOptions {
@@ -359,6 +403,8 @@ export interface StripeUpdateElementsOptions {
      * The layout of each Element stays consistent, but you can modify colors, fonts, borders, padding, and more.
      */
     appearance?: StripeUPEAppearanceOptions;
+
+    clientSecret?: string;
 }
 
 export interface StripeUPEClient {
@@ -423,6 +469,7 @@ export enum StripeElementType {
     PAYMENT = 'payment',
     AUTHENTICATION = 'linkAuthentication',
     SHIPPING = 'address',
+    EXPRESS_CHECKOUT = 'expressCheckout',
 }
 
 export enum StripeUPEPaymentIntentStatus {

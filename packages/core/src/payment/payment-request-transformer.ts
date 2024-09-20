@@ -48,6 +48,20 @@ export default class PaymentRequestTransformer {
         const internalCustomer =
             customer && billingAddress && mapToInternalCustomer(customer, billingAddress);
 
+        // console.log('instrumentMeta', instrumentMeta);
+        // console.log('payment.paymentData', payment.paymentData);
+        //
+        // if (payment.paymentData) {
+        //     console.log('isVaultedInstrument(payment.paymentData)', isVaultedInstrument(payment.paymentData));
+        //     console.log(' isFormattedVaultedInstrument(payment.paymentData))',  isFormattedVaultedInstrument(payment.paymentData));
+        //     console.log('checkoutState.payment.getPaymentToken()', checkoutState.payment.getPaymentToken());
+        // }
+        //
+        // if (instrumentMeta && payment.paymentData) {
+        //     console.log('${checkoutState.payment.getPaymentToken()}, ${instrumentMeta.vaultAccessToken}',
+        //         `${checkoutState.payment.getPaymentToken()}, ${instrumentMeta.vaultAccessToken}`);
+        // }
+
         const authToken =
             instrumentMeta &&
             payment.paymentData &&

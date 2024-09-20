@@ -49,7 +49,7 @@ export default class StripeUPEScriptLoader {
         options: StripeElementsOptions,
     ): Promise<StripeElements> {
         let stripeElements = this.stripeWindow.bcStripeElements;
-
+        console.log('options', options);
         if (!stripeElements) {
             stripeElements = stripeClient.elements(options);
 
