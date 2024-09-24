@@ -16,27 +16,19 @@ export default class StripeUPEScriptLoader {
     ) {}
 
     async getStripeClient(
-        stripePublishableKey: string,
-        stripeAccount: string,
+        stripePublishableKey?: string,
+        stripeAccount?: string,
         locale?: string,
     ): Promise<StripeUPEClient> {
         let stripeClient = this.stripeWindow.bcStripeClient;
+        console.log('stripeAccount', stripeAccount);
+        console.log('locale', locale);
+        console.log('stripePublishableKey', stripePublishableKey);
 
         if (!stripeClient) {
             const stripe = await this.load();
 
-            stripeClient = stripe(stripePublishableKey, {
-                stripeAccount,
-                locale,
-                betas: [
-                    'payment_element_beta_2',
-                    'alipay_pm_beta_1',
-                    'link_default_integration_beta_1',
-                    'shipping_address_element_beta_1',
-                    'address_element_beta_1',
-                ],
-                apiVersion: '2020-03-02;alipay_beta=v1;link_beta=v1',
-            });
+            stripeClient = stripe('pk_test_iyRKkVUt0YWpJ3Lq7mfsw3VW008KiFDH4s');
 
             Object.assign(this.stripeWindow, { bcStripeClient: stripeClient });
         }
@@ -49,7 +41,7 @@ export default class StripeUPEScriptLoader {
         options: StripeElementsOptions,
     ): Promise<StripeElements> {
         let stripeElements = this.stripeWindow.bcStripeElements;
-        console.log('options', options);
+
         if (!stripeElements) {
             stripeElements = stripeClient.elements(options);
 

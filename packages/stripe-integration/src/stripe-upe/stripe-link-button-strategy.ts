@@ -23,7 +23,7 @@ import {
     StripeUPEClient,
     StripeUPEPaymentIntentStatus
 } from './stripe-upe';
-import { isStripeUPEPaymentMethodLike } from './is-stripe-upe-payment-method-like';
+// import { isStripeUPEPaymentMethodLike } from './is-stripe-upe-payment-method-like';
 import { WithStripeUPECustomerInitializeOptions } from '@bigcommerce/checkout-sdk/stripe-integration';
 import {Payment} from '@bigcommerce/checkout-sdk/core';
 import {includes, some} from 'lodash';
@@ -44,7 +44,7 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
                 `Unable to proceed because "options" argument is not provided.`,
             );
         }
-        console.log('init2');
+
         const { container, isLoading } = options.stripeupe;
         const gatewayId ='stripeupe';
         const methodId= 'card';
@@ -57,43 +57,43 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
             }
         });
 
-        await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
-            params: { method: methodId },
-        });
+        // await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
+        //     params: { method: methodId },
+        // });
 
-        const state = this.paymentIntegrationService.getState();
-        const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
-        const { clientToken } = paymentMethod;
+        // const state = this.paymentIntegrationService.getState();
+        // const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
+        // const { clientToken } = paymentMethod;
 
-        if (!isStripeUPEPaymentMethodLike(paymentMethod) || !clientToken) {
-            throw new MissingDataError(MissingDataErrorType.MissingPaymentToken);
-        }
+        // if (!isStripeUPEPaymentMethodLike(paymentMethod) || !clientToken) {
+        //     throw new MissingDataError(MissingDataErrorType.MissingPaymentToken);
+        // }
 
-        const {
-            initializationData: { stripePublishableKey, stripeConnectedAccount },
-        } = paymentMethod;
+        // const {
+        //     initializationData: { stripePublishableKey, stripeConnectedAccount },
+        // } = paymentMethod;
 
-        this._stripeUPEClient = await this.scriptLoader.getStripeClient(
-            stripePublishableKey,
-            stripeConnectedAccount,
-        );
+        this._stripeUPEClient = await this.scriptLoader.getStripeClient();
 
         const expressCheckoutOptions: StripeElementsCreateOptions = {
-            fields: {
-                billingDetails: StripeStringConstants.AUTO,
-                shippingDetails: StripeStringConstants.AUTO,
-            },
             paymentMethods: {
                 link: 'auto',
                 applePay: 'never',
                 googlePay: 'never',
+                amazonPay: 'never',
                 paypal: 'never',
             },
         }
 
-        this._stripeElements = await this.scriptLoader.getElements(this._stripeUPEClient, {
-            clientSecret: clientToken
-        });
+
+        const elementsOptions = {
+            mode: 'payment',
+            amount: 1099,
+            currency: 'usd',
+            captureMethod: 'automatic'
+        };
+
+        this._stripeElements = await this.scriptLoader.getElements(this._stripeUPEClient, elementsOptions);
 
         const expressCheckoutElement = this._stripeElements.create(StripeElementType.EXPRESS_CHECKOUT, expressCheckoutOptions);
         expressCheckoutElement.mount('#' + container);
@@ -107,10 +107,21 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
                 throw new NotInitializedError(NotInitializedErrorType.PaymentNotInitialized);
             }
 
+            await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
+                params: { method: methodId },
+            });
+
+            const state = this.paymentIntegrationService.getState();
+            const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
+            const { clientToken, returnUrl } = paymentMethod;
+
             const { paymentIntent, error: stripeError } = await this._stripeUPEClient.confirmPayment({
                 elements: this._stripeElements,
                 clientSecret: clientToken,
-                redirect: StripeStringConstants.IF_REQUIRED,
+                redirect: StripeStringConstants.ALWAYS,
+                confirmParams: {
+                    return_url: returnUrl,
+                },
             });
 
             console.log('confirm', event);
@@ -145,7 +156,6 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
                 firstName,
                 lastName,
                 phone,
-                // email,
                 company: '',
                 address1: shippingAddress?.line1 || '',
                 address2: '',
@@ -218,47 +228,48 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
             });
         });
 
-        expressCheckoutElement.on('shippingaddresschange', async (event: any) => {
-            console.log('shippingaddresschange', event);
-            const shippingAddress = event.address;
-            const result = {
-                firstName: 'John',
-                lastName: 'Doe',
-                phone: '888888888',
-                // email,
-                company: '',
-                address1: shippingAddress?.line1 || '',
-                address2: shippingAddress?.line2 || '',
-                city: shippingAddress?.city || '',
-                countryCode: shippingAddress?.country || '',
-                postalCode: shippingAddress?.postal_code || '',
-                stateOrProvince: shippingAddress?.state || '',
-                stateOrProvinceCode: '',
-                customFields: [],
-            };
-
-            await this.paymentIntegrationService.updateShippingAddress(result);
-            const shippingRates = await this.getAvailableShippingOptions();
-
-            await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
-                params: { method: methodId },
-            });
-
-            const state = this.paymentIntegrationService.getState();
-            const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
-            const { clientToken } = paymentMethod;
-
-            if (this._stripeElements) {
-                this._stripeElements.update({
-                    clientSecret: clientToken
-                });
-                await this._stripeElements.fetchUpdates();
-            }
-
-            event.resolve({
-                shippingRates,
-            });
-        });
+        // expressCheckoutElement.on('shippingaddresschange', async (event: any) => {
+        //     console.log('shippingaddresschange', event);
+        //
+        //     const shippingAddress = event.address;
+        //     const result = {
+        //         firstName: 'John',
+        //         lastName: 'Doe',
+        //         phone: '888888888',
+        //         // email,
+        //         company: '',
+        //         address1: shippingAddress?.line1 || '',
+        //         address2: shippingAddress?.line2 || '',
+        //         city: shippingAddress?.city || '',
+        //         countryCode: shippingAddress?.country || '',
+        //         postalCode: shippingAddress?.postal_code || '',
+        //         stateOrProvince: shippingAddress?.state || '',
+        //         stateOrProvinceCode: '',
+        //         customFields: [],
+        //     };
+        //
+        //     await this.paymentIntegrationService.updateShippingAddress(result);
+        //     const shippingRates = await this.getAvailableShippingOptions();
+        //
+        //     await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
+        //         params: { method: methodId },
+        //     });
+        //
+        //     const state = this.paymentIntegrationService.getState();
+        //     const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
+        //     const { clientToken } = paymentMethod;
+        //
+        //     if (this._stripeElements) {
+        //         this._stripeElements.update({
+        //             clientSecret: clientToken
+        //         });
+        //         await this._stripeElements.fetchUpdates();
+        //     }
+        //
+        //     event.resolve({
+        //         shippingRates,
+        //     });
+        // });
 
         expressCheckoutElement.on('shippingratechange', async (event) => {
             console.log('shippingratechange', event);

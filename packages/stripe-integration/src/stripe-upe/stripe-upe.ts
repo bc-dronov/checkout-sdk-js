@@ -235,6 +235,7 @@ export interface StripeElementsCreateOptions {
         link?: 'auto' | 'never';
         applePay?: 'auto' | 'never';
         googlePay?: 'auto' | 'never';
+        amazonPay?: 'auto' | 'never';
         paypal?: 'auto' | 'never';
     }
     shippingAddressRequired?: boolean;
@@ -428,7 +429,7 @@ export interface StripeUPEClient {
     /**
      * Create an `Elements` instance, which manages a group of elements.
      */
-    elements(options: StripeElementsOptions): StripeElements;
+    elements(options?: StripeElementsOptions): StripeElements;
 }
 
 interface StripeUpeResult {

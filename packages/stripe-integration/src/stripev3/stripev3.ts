@@ -883,7 +883,7 @@ export interface StripeConfigurationOptions {
      * For usage with [Connect](https://stripe.com/docs/connect) only.
      * Specifying a connected account ID (e.g., acct_24BFMpJ1svR5A89k) allows you to perform actions on behalf of that account.
      */
-    stripeAccount: string;
+    stripeAccount?: string;
 
     /**
      * Override your account's [API version](https://stripe.com/docs/api/versioning)
