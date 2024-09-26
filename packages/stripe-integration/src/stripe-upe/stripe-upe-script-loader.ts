@@ -16,7 +16,7 @@ export default class StripeUPEScriptLoader {
     ) {}
 
     async getStripeClient(
-        stripePublishableKey?: string,
+        stripePublishableKey: string,
         stripeAccount?: string,
         locale?: string,
     ): Promise<StripeUPEClient> {
@@ -29,6 +29,7 @@ export default class StripeUPEScriptLoader {
             const stripe = await this.load();
 
             stripeClient = stripe('pk_test_iyRKkVUt0YWpJ3Lq7mfsw3VW008KiFDH4s');
+            // stripeClient = stripe(stripePublishableKey);
 
             Object.assign(this.stripeWindow, { bcStripeClient: stripeClient });
         }

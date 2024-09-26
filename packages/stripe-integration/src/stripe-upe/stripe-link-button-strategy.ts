@@ -27,6 +27,7 @@ import {
 import { WithStripeUPECustomerInitializeOptions } from '@bigcommerce/checkout-sdk/stripe-integration';
 import {Payment} from '@bigcommerce/checkout-sdk/core';
 import {includes, some} from 'lodash';
+import { isStripeUPEPaymentMethodLike } from './is-stripe-upe-payment-method-like';
 
 export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy {
     private _stripeUPEClient?: StripeUPEClient;
@@ -57,6 +58,14 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
             }
         });
 
+        await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
+            params: { method: methodId },
+        });
+
+        const state = this.paymentIntegrationService.getState();
+        const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
+        const { clientToken, returnUrl } = paymentMethod;
+
         // await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
         //     params: { method: methodId },
         // });
@@ -65,15 +74,15 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
         // const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
         // const { clientToken } = paymentMethod;
 
-        // if (!isStripeUPEPaymentMethodLike(paymentMethod) || !clientToken) {
-        //     throw new MissingDataError(MissingDataErrorType.MissingPaymentToken);
-        // }
+        if (!isStripeUPEPaymentMethodLike(paymentMethod) || !clientToken) {
+            throw new MissingDataError(MissingDataErrorType.MissingPaymentToken);
+        }
 
-        // const {
-        //     initializationData: { stripePublishableKey, stripeConnectedAccount },
-        // } = paymentMethod;
-
-        this._stripeUPEClient = await this.scriptLoader.getStripeClient();
+        const {
+            initializationData: { stripePublishableKey },
+        } = paymentMethod;
+        console.log('Stripe Link INIT 10');
+        this._stripeUPEClient = await this.scriptLoader.getStripeClient(stripePublishableKey);
 
         const expressCheckoutOptions: StripeElementsCreateOptions = {
             paymentMethods: {
@@ -90,7 +99,8 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
             mode: 'payment',
             amount: 1099,
             currency: 'usd',
-            captureMethod: 'automatic'
+            // captureMethod: 'automatic',
+            loader: 'always',
         };
 
         this._stripeElements = await this.scriptLoader.getElements(this._stripeUPEClient, elementsOptions);
@@ -107,18 +117,18 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
                 throw new NotInitializedError(NotInitializedErrorType.PaymentNotInitialized);
             }
 
-            await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
-                params: { method: methodId },
-            });
-
-            const state = this.paymentIntegrationService.getState();
-            const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
-            const { clientToken, returnUrl } = paymentMethod;
+            // await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
+            //     params: { method: methodId },
+            // });
+            //
+            // const state = this.paymentIntegrationService.getState();
+            // const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
+            // const { clientToken, returnUrl } = paymentMethod;
 
             const { paymentIntent, error: stripeError } = await this._stripeUPEClient.confirmPayment({
                 elements: this._stripeElements,
                 clientSecret: clientToken,
-                redirect: StripeStringConstants.ALWAYS,
+                redirect: StripeStringConstants.IF_REQUIRED,
                 confirmParams: {
                     return_url: returnUrl,
                 },
@@ -136,58 +146,72 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
             const { address: billingDetails, name, phone, email } = event.billingDetails;
             const firstName = name.split(' ')[0];
             const lastName = name.split(' ')[1];
-            // await this.paymentIntegrationService.updateBillingAddress({
-            //     firstName: 'Test',
-            //     lastName:'Test2',
-            //     phone: '123123123',
-            //     company: '',
-            //     address1: 'Str. 2',
-            //     address2: 'Street 1',
-            //     city: 'Miami',
-            //     countryCode: 'US',
-            //     postalCode: '00211',
-            //     stateOrProvince: 'California',
-            //     stateOrProvinceCode: '',
-            //     email: 'mykola.dronov@gmail.com',
-            //     customFields: [],
-            // });
+            console.log(firstName, lastName, shippingAddress, billingDetails, phone, email, returnUrl);
+
+            await this.paymentIntegrationService.updateBillingAddress({
+                firstName,
+                lastName,
+                phone,
+                company: '',
+                address1: 'Str. 2',
+                address2: 'Street 1',
+                city: 'Miami',
+                countryCode: billingDetails.country || '',
+                postalCode: billingDetails.postal_code || '',
+                stateOrProvince: 'California',
+                stateOrProvinceCode: '',
+                email,
+                customFields: [],
+            });
 
             await this.paymentIntegrationService.updateShippingAddress({
                 firstName,
                 lastName,
                 phone,
                 company: '',
-                address1: shippingAddress?.line1 || '',
-                address2: '',
-                city: shippingAddress?.city || '',
+                address1: 'Str. 2',
+                address2: 'Street 1',
+                city: 'Miami',
                 countryCode: shippingAddress?.country || '',
                 postalCode: shippingAddress?.postal_code || '',
-                stateOrProvince: shippingAddress?.state || '',
+                stateOrProvince: 'California',
                 stateOrProvinceCode: '',
                 customFields: [],
             });
 
-            await this.paymentIntegrationService.updateBillingAddress({
-                firstName,
-                lastName,
-                phone,
-                email,
-                company: '',
-                address1: billingDetails.line1 || '',
-                address2: '',
-                city: billingDetails.city || '',
-                countryCode: billingDetails.country || '',
-                postalCode: billingDetails.postal_code || '',
-                stateOrProvince: '',
-                stateOrProvinceCode: '',
-                customFields: [],
-            });
+            // await this.paymentIntegrationService.updateShippingAddress({
+            //     firstName,
+            //     lastName,
+            //     phone,
+            //     company: '',
+            //     address1: shippingAddress?.line1 || '',
+            //     address2: '',
+            //     city: shippingAddress?.city || '',
+            //     countryCode: shippingAddress?.country || '',
+            //     postalCode: shippingAddress?.postal_code || '',
+            //     stateOrProvince: shippingAddress?.state || '',
+            //     stateOrProvinceCode: '',
+            //     customFields: [],
+            // });
+
+            // await this.paymentIntegrationService.updateBillingAddress({
+            //     firstName,
+            //     lastName,
+            //     phone,
+            //     email,
+            //     company: '',
+            //     address1: billingDetails.line1 || '',
+            //     address2: '',
+            //     city: billingDetails.city || '',
+            //     countryCode: billingDetails.country || '',
+            //     postalCode: billingDetails.postal_code || '',
+            //     stateOrProvince: '',
+            //     stateOrProvinceCode: '',
+            //     customFields: [],
+            // });
 
             console.log('paymentIntent', paymentIntent);
-            // const paymentPayload = this._getPaymentPayload(
-            //     methodId,
-            //     paymentIntent.client_secret,
-            // );
+
             const paymentPayload = this._getPaymentPayload(
                 methodId,
                 paymentIntent.id,
@@ -197,13 +221,14 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
             await this.paymentIntegrationService.submitOrder({}, { params: { methodId } });
             console.log('submit order end');
 
-            try {
-                console.log('submitPayment');
-                await this.paymentIntegrationService.submitPayment(paymentPayload);
-            } catch (error) {
-                console.log('catch submitPayment');
-                this._processAdditionalAction(error, methodId);
-            }
+            // try {
+            //     console.log('submitPayment');
+            await this.paymentIntegrationService.submitPayment(paymentPayload);
+            console.log('_processAdditionalAction', this._processAdditionalAction);
+            // } catch (error) {
+            //     console.log('catch submitPayment');
+            //     this._processAdditionalAction(error, methodId);
+            // }
         });
 
         const countries = await this.paymentIntegrationService.loadShippingCountries();
@@ -213,7 +238,7 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
 
         console.log('allowedShippingCountries', allowedShippingCountries);
 
-        expressCheckoutElement.on('click', (event) => {
+        expressCheckoutElement.on('click', async (event) => {
             console.log('click', event);
 
             event.resolve({
@@ -228,59 +253,65 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
             });
         });
 
-        // expressCheckoutElement.on('shippingaddresschange', async (event: any) => {
-        //     console.log('shippingaddresschange', event);
-        //
-        //     const shippingAddress = event.address;
-        //     const result = {
-        //         firstName: 'John',
-        //         lastName: 'Doe',
-        //         phone: '888888888',
-        //         // email,
-        //         company: '',
-        //         address1: shippingAddress?.line1 || '',
-        //         address2: shippingAddress?.line2 || '',
-        //         city: shippingAddress?.city || '',
-        //         countryCode: shippingAddress?.country || '',
-        //         postalCode: shippingAddress?.postal_code || '',
-        //         stateOrProvince: shippingAddress?.state || '',
-        //         stateOrProvinceCode: '',
-        //         customFields: [],
-        //     };
-        //
-        //     await this.paymentIntegrationService.updateShippingAddress(result);
-        //     const shippingRates = await this.getAvailableShippingOptions();
-        //
-        //     await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
-        //         params: { method: methodId },
-        //     });
-        //
-        //     const state = this.paymentIntegrationService.getState();
-        //     const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
-        //     const { clientToken } = paymentMethod;
-        //
-        //     if (this._stripeElements) {
-        //         this._stripeElements.update({
-        //             clientSecret: clientToken
-        //         });
-        //         await this._stripeElements.fetchUpdates();
-        //     }
-        //
-        //     event.resolve({
-        //         shippingRates,
-        //     });
-        // });
+        expressCheckoutElement.on('shippingaddresschange', async (event: any) => {
+            console.log('shippingaddresschange2', event);
+
+            const shippingAddress = event.address;
+            const result = {
+                firstName: '',
+                lastName: '',
+                phone: '',
+                company: '',
+                address1: shippingAddress?.line1 || '',
+                address2: shippingAddress?.line2 || '',
+                city: shippingAddress?.city || '',
+                countryCode: shippingAddress?.country || '',
+                postalCode: shippingAddress?.postal_code || '',
+                stateOrProvince: shippingAddress?.state || '',
+                stateOrProvinceCode: '',
+                customFields: [],
+            };
+
+            await this.paymentIntegrationService.updateShippingAddress(result);
+
+            // await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
+            //     params: { method: methodId },
+            // });
+
+            // const state = this.paymentIntegrationService.getState();
+            // const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
+            // const { clientToken: updatedIntent } = paymentMethod;
+            const shippingRates = await this.getAvailableShippingOptions();
+            console.log(shippingRates);
+
+            if (this._stripeElements) {
+                console.log('_stripeElements update');
+                this._stripeElements.update({
+                    clientSecret: 'pi_3Q2uzmFYHgt19eoy02tI4CUo_secret_DFKtV34z6Btov3Qx3RrYRRl8J',
+                });
+
+                console.log('_stripeElements update end');
+                await this._stripeElements.fetchUpdates();
+            }
+
+            // pi_3Q2uzmFYHgt19eoy02tI4CUo_secret_DFKtV34z6Btov3Qx3RrYRRl8J
+            // pi_3Q2uzmFYHgt19eoy02tI4CUo_secret_DFKtV34z6Btov3Qx3RrYRRl8J
+            console.log('shippingaddresschange resolve');
+            event.resolve({
+                shippingRates,
+            });
+        });
 
         expressCheckoutElement.on('shippingratechange', async (event) => {
             console.log('shippingratechange', event);
 
-            await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
-                params: { method: methodId },
-            });
-
-            const state = this.paymentIntegrationService.getState();
-            const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
-            const { clientToken } = paymentMethod;
+            // await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
+            //     params: { method: methodId },
+            // });
+            //
+            // const state = this.paymentIntegrationService.getState();
+            // const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
+            // const { clientToken } = paymentMethod;
 
             if (this._stripeElements) {
                 this._stripeElements.update({
@@ -315,6 +346,7 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
         const availableShippingOptions = (consignment.availableShippingOptions || []).map(
             this._getStripeShippingOption.bind(this),
         );
+        console.log('availableShippingOptions', availableShippingOptions);
 
         if (availableShippingOptions.length) {
             if (!consignment.selectedShippingOption?.id && availableShippingOptions[0]) {
@@ -353,8 +385,7 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
         const formattedPayload: any = {
             cart_id: cartId,
             credit_card_token: { token },
-            // client_token: token,
-            confirm: false,
+            confirm: true,
             vault_payment_instrument: false,
             set_as_default_stored_instrument: false,
         };
