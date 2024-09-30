@@ -406,6 +406,10 @@ export interface StripeUpdateElementsOptions {
     appearance?: StripeUPEAppearanceOptions;
 
     clientSecret?: string;
+
+    amount?: number;
+    currency?: string;
+    mode?: string;
 }
 
 export interface StripeUPEClient {

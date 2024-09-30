@@ -26,7 +26,7 @@ import {
 // import { isStripeUPEPaymentMethodLike } from './is-stripe-upe-payment-method-like';
 import { WithStripeUPECustomerInitializeOptions } from '@bigcommerce/checkout-sdk/stripe-integration';
 import {Payment} from '@bigcommerce/checkout-sdk/core';
-import {includes, some} from 'lodash';
+import {includes, round, some} from 'lodash';
 import { isStripeUPEPaymentMethodLike } from './is-stripe-upe-payment-method-like';
 
 export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy {
@@ -65,7 +65,6 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
         const state = this.paymentIntegrationService.getState();
         const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
         const { clientToken, returnUrl } = paymentMethod;
-
         // await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
         //     params: { method: methodId },
         // });
@@ -81,7 +80,7 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
         const {
             initializationData: { stripePublishableKey },
         } = paymentMethod;
-        console.log('Stripe Link INIT 10');
+        console.log('Stripe Link INIT2');
         this._stripeUPEClient = await this.scriptLoader.getStripeClient(stripePublishableKey);
 
         const expressCheckoutOptions: StripeElementsCreateOptions = {
@@ -94,13 +93,11 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
             },
         }
 
-
+        const { cartAmount: amount } = this.paymentIntegrationService.getState().getCartOrThrow();
         const elementsOptions = {
             mode: 'payment',
-            amount: 1099,
+            amount: amount * 100,
             currency: 'usd',
-            // captureMethod: 'automatic',
-            loader: 'always',
         };
 
         this._stripeElements = await this.scriptLoader.getElements(this._stripeUPEClient, elementsOptions);
@@ -254,8 +251,6 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
         });
 
         expressCheckoutElement.on('shippingaddresschange', async (event: any) => {
-            console.log('shippingaddresschange2', event);
-
             const shippingAddress = event.address;
             const result = {
                 firstName: '',
@@ -274,29 +269,17 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
 
             await this.paymentIntegrationService.updateShippingAddress(result);
 
-            // await this.paymentIntegrationService.loadPaymentMethod(gatewayId, {
-            //     params: { method: methodId },
-            // });
-
-            // const state = this.paymentIntegrationService.getState();
-            // const paymentMethod = state.getPaymentMethodOrThrow(methodId, gatewayId);
-            // const { clientToken: updatedIntent } = paymentMethod;
             const shippingRates = await this.getAvailableShippingOptions();
-            console.log(shippingRates);
+            const totalPrice = this.getTotalPrice();
 
             if (this._stripeElements) {
-                console.log('_stripeElements update');
                 this._stripeElements.update({
-                    clientSecret: 'pi_3Q2uzmFYHgt19eoy02tI4CUo_secret_DFKtV34z6Btov3Qx3RrYRRl8J',
+                    currency: 'usd',
+                    mode: 'payment',
+                    amount: Math.round(+totalPrice * 100),
                 });
-
-                console.log('_stripeElements update end');
-                await this._stripeElements.fetchUpdates();
             }
 
-            // pi_3Q2uzmFYHgt19eoy02tI4CUo_secret_DFKtV34z6Btov3Qx3RrYRRl8J
-            // pi_3Q2uzmFYHgt19eoy02tI4CUo_secret_DFKtV34z6Btov3Qx3RrYRRl8J
-            console.log('shippingaddresschange resolve');
             event.resolve({
                 shippingRates,
             });
@@ -315,15 +298,32 @@ export default class StripeLinkButtonStrategy implements CheckoutButtonStrategy 
 
             if (this._stripeElements) {
                 this._stripeElements.update({
-                    clientSecret: clientToken
+                    // clientSecret: clientToken,
+                    currency: 'usd',
+                    mode: 'payment',
+                    amount: amount * 100,
+
                 });
-                await this._stripeElements.fetchUpdates();
+                // this._stripeElements.update({
+                //     clientSecret: clientToken
+                // });
+                // await this._stripeElements.fetchUpdates();
             }
 
             event.resolve({});
         });
 
         return Promise.resolve();
+    }
+
+    getTotalPrice(): string {
+        const { getCheckoutOrThrow, getCartOrThrow } = this.paymentIntegrationService.getState();
+        const { decimalPlaces } = getCartOrThrow().currency;
+        const totalPrice = round(getCheckoutOrThrow().outstandingBalance, decimalPlaces).toFixed(
+            decimalPlaces,
+        );
+
+        return totalPrice;
     }
 
     async getAvailableShippingOptions() {
