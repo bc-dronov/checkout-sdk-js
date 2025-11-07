@@ -42,7 +42,7 @@
         "build-watch": {
             "executor": "@nrwl/workspace:run-commands",
             "options": {
-                "command": "webpack --config webpack.config.js --config-name esm --watch --progress"
+                "command": "webpack --config webpack.config.js --watch --progress"
             },
             "dependsOn": [
                 {

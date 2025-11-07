@@ -13,22 +13,6 @@ const coreSrcPath = path.join(__dirname, 'packages/core/src');
 const hostedFormV2SrcPath = path.join(__dirname, 'packages/hosted-form-v2/src');
 
 const libraryEntries = {
-    'checkout-sdk': path.join(coreSrcPath, 'bundles', 'checkout-sdk.ts'),
-    'checkout-button': path.join(coreSrcPath, 'bundles', 'checkout-button.ts'),
-    'embedded-checkout': path.join(coreSrcPath, 'bundles', 'embedded-checkout.ts'),
-    extension: path.join(coreSrcPath, 'bundles', 'extension.ts'),
-    'hosted-form': path.join(coreSrcPath, 'bundles', 'hosted-form.ts'),
-    'internal-mappers': path.join(coreSrcPath, 'bundles', 'internal-mappers.ts'),
-    'hosted-form-v2-iframe-content': path.join(
-        hostedFormV2SrcPath,
-        'bundles',
-        'hosted-form-v2-iframe-content.ts',
-    ),
-    'hosted-form-v2-iframe-host': path.join(
-        hostedFormV2SrcPath,
-        'bundles',
-        'hosted-form-v2-iframe-host.ts',
-    ),
     ...getIntegrationEntries(),
 };
 
@@ -75,19 +59,13 @@ async function getBaseConfig(_options, argv = {}) {
 
 function getIntegrationEntries() {
     const integrationsPath = path.join(coreSrcPath, 'generated', 'integrations');
-    const integrationFolders = {};
-
-    fs.readdirSync(integrationsPath)
-        .filter((file) => {
-            return fs.statSync(path.join(integrationsPath, file)).isDirectory();
-        })
-        .forEach((folder) => {
-            integrationFolders[`integrations/${folder}`] = path.join(
-                integrationsPath,
-                folder,
-                'index.ts',
-            );
-        });
+    const integrationFolders = {
+        'google-pay-integration': path.join(
+            integrationsPath,
+            'google-pay-integration',
+            'index.ts',
+        )
+    };
 
     return integrationFolders;
 }
